@@ -42,6 +42,7 @@
 
 #define ENOUGH_MEASURE 10000
 #define TEST_TRIES 10
+#define DUDECT_NUMBER_PERCENTILES (100)
 
 static t_context_t *t;
 
@@ -66,7 +67,7 @@ static void differentiate(int64_t *exec_times,
 
 static void update_statistics(const int64_t *exec_times, uint8_t *classes)
 {
-    for (size_t i = 0; i < N_MEASURES; i++) {
+    for (size_t i = 10; i < N_MEASURES; i++) {
         int64_t difference = exec_times[i];
         /* CPU cycle counter overflowed or dropped measurement */
         if (difference <= 0)
@@ -116,6 +117,81 @@ static bool report(void)
     return true;
 }
 
+static int64_t percentile(int64_t *a_sorted, double which, size_t size)
+{
+    size_t array_position = (size_t) ((double) size * (double) which);
+    assert(array_position < size);
+    return a_sorted[array_position];
+}
+
+static void prepare_percentiles(int64_t *exec_times)
+{
+    for (size_t i = 0; i < N_MEASURES; i++) {
+        exec_times[i] = percentile(
+            exec_times,
+            1 - (pow(0.5, 10 * (double) (i + 1) / DUDECT_NUMBER_PERCENTILES)),
+            N_MEASURES);
+    }
+}
+
+typedef struct {
+    int64_t key;   // 主要排序依據
+    int8_t value;  // 需要同步變動的數據
+} Pair;
+
+int compare(const void *a, const void *b)
+{
+    const Pair *pair1 = (const Pair *) a;
+    const Pair *pair2 = (const Pair *) b;
+
+    if (pair1->key < pair2->key)
+        return -1;
+    if (pair1->key > pair2->key)
+        return 1;
+    return 0;
+}
+
+static Pair *compact(const int64_t *exec_times, uint8_t *classes)
+{
+    Pair *arr = malloc(N_MEASURES * sizeof(Pair));
+
+    if (!arr) {
+        fprintf(stderr, "記憶體分配失敗\n");
+        return NULL;
+    }
+
+    for (size_t i = 0; i < N_MEASURES; i++) {
+        arr[i].key = exec_times[i];
+        arr[i].value = classes[i];
+    }
+    return arr;
+}
+
+static void change(int64_t *exec_times, uint8_t *classes, Pair *arr)
+{
+    for (size_t i = 0; i < N_MEASURES; i++) {
+        exec_times[i] = arr[i].key;
+        classes[i] = arr[i].value;
+    }
+    free(arr);
+}
+
+
+void printArray(uint8_t arr[], int size)
+{
+    for (int i = 0; i < size; i++) {
+        printf("%d ", arr[i]);  // 逐個輸出元素
+    }
+    printf("\n");
+}
+void printArray2(int64_t arr[], int size)
+{
+    for (int i = 0; i < size; i++) {
+        printf("%ld ", arr[i]);  // 逐個輸出元素
+    }
+    printf("\n");
+}
+
 static bool doit(int mode)
 {
     int64_t *before_ticks = calloc(N_MEASURES + 1, sizeof(int64_t));
@@ -133,6 +209,15 @@ static bool doit(int mode)
 
     bool ret = measure(before_ticks, after_ticks, input_data, mode);
     differentiate(exec_times, before_ticks, after_ticks);
+    // printArray2(exec_times ,150);
+    // printArray(classes ,150);
+    Pair *temp = compact(exec_times, classes);
+    qsort(temp, N_MEASURES, sizeof(Pair), compare);
+    change(exec_times, classes, temp);
+    // printArray2(exec_times ,150);
+    // printArray(classes ,150);
+    prepare_percentiles(exec_times);
+
     update_statistics(exec_times, classes);
     ret &= report();
 
@@ -170,8 +255,11 @@ static bool test_const(char *text, int mode)
     return result;
 }
 
-#define DUT_FUNC_IMPL(op) \
-    bool is_##op##_const(void) { return test_const(#op, DUT(op)); }
+#define DUT_FUNC_IMPL(op)                \
+    bool is_##op##_const(void)           \
+    {                                    \
+        return test_const(#op, DUT(op)); \
+    }
 
 #define _(x) DUT_FUNC_IMPL(x)
 DUT_FUNCS
