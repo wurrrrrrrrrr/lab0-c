@@ -323,18 +323,65 @@ void q_sort(struct list_head *head, bool descend)
  * the right side of it */
 int q_ascend(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    if (!head || list_empty(head) || list_is_singular(head)) {
+        return 0;
+    }
+
+
+    char *tmp_max = list_entry(head->next, element_t, list)->value;
+    struct list_head *cur = head->next->next;
+
+
+    while (cur != head) {
+        element_t *cur_node = list_entry(cur, element_t, list);
+        char *tmp1 = cur_node->value;
+
+        if (strcmp(tmp1, tmp_max) > 0) {
+            tmp_max = tmp1;
+            cur = cur->next;
+        } else {
+            cur = cur->next;
+            element_t *free_node = list_entry(cur->prev, element_t, list);
+            list_del(&free_node->list);
+            free(free_node->value);
+            free(free_node);
+        }
+    }
+
+    return q_size(head);
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to
  * the right side of it */
 int q_descend(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
-}
+    if (!head || list_empty(head) || list_is_singular(head)) {
+        return 0;
+    }
 
+
+    char *tmp_max = list_entry(head->prev, element_t, list)->value;
+    struct list_head *cur = head->prev->prev;
+
+
+    while (cur != head) {
+        element_t *cur_node = list_entry(cur, element_t, list);
+        char *tmp1 = cur_node->value;
+
+        if (strcmp(tmp1, tmp_max) > 0) {
+            tmp_max = tmp1;
+            cur = cur->prev;
+        } else {
+            cur = cur->prev;
+            element_t *free_node = list_entry(cur->next, element_t, list);
+            list_del(&free_node->list);
+            free(free_node->value);
+            free(free_node);
+        }
+    }
+
+    return q_size(head);
+}
 /* Merge all the queues into one sorted queue, which is in ascending/descending
  * order */
 int q_merge(struct list_head *head, bool descend)
