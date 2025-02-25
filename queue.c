@@ -109,14 +109,53 @@ int q_size(struct list_head *head)
 /* Delete the middle node in queue */
 bool q_delete_mid(struct list_head *head)
 {
-    // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    if (!head || list_empty(head)) {
+        return false;
+    }
+    struct list_head *first = head->next;
+    struct list_head *last = head->prev;
+    while (first != last && first->next != last) {
+        first = first->next;
+        last = last->prev;
+    }
+    list_del(last);
+    free(list_entry(last, element_t, list)->value);
+    free(list_entry(last, element_t, list));
     return true;
 }
 
 /* Delete all nodes that have duplicate string */
 bool q_delete_dup(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    if (!head || list_empty(head)) {
+        return false;
+    }
+    struct list_head *node, *safe;
+    bool dup = false;
+    list_for_each_safe (node, safe, head) {
+        element_t *cur = list_entry(node, element_t, list);
+        if (safe != head) {
+            element_t *tmp = list_entry(safe, element_t, list);
+            if (!strcmp(cur->value, tmp->value)) {
+                list_del(node);
+                free(cur->value);
+                free(cur);
+                dup = true;
+            } else if (strcmp(cur->value, tmp->value) && dup) {
+                list_del(node);
+                free(cur->value);
+                free(cur);
+                dup = false;
+            }
+        } else {
+            if (dup) {
+                list_del(node);
+                free(cur->value);
+                free(cur);
+                dup = false;
+            }
+        }
+    }
     return true;
 }
 
