@@ -175,14 +175,50 @@ void q_swap(struct list_head *head)
 }
 
 /* Reverse elements in queue */
-void q_reverse(struct list_head *head) {}
-
-/* Reverse the nodes of the list k at a time */
-void q_reverseK(struct list_head *head, int k)
+void q_reverse(struct list_head *head)
 {
-    // https://leetcode.com/problems/reverse-nodes-in-k-group/
+    if (!head || list_empty(head) || list_is_singular(head)) {
+        return;
+    }
+    struct list_head *node = head->next;
+    struct list_head *safe = head->next->next;
+    while (head != node) {
+        node->next = node->prev;
+        node->prev = safe;
+        node = safe;
+        safe = safe->next;
+    }
+    struct list_head *temp = head->next;
+    head->next = head->prev;
+    head->prev = temp;
 }
 
+/* Reverse the nodes of the list k at a time
+    } */
+void q_reverseK(struct list_head *head, int k)
+{
+    if (!head || list_empty(head) || list_is_singular(head)) {
+        return;
+    }
+    int times = q_size(head) / k;
+    struct list_head *tail;
+
+    LIST_HEAD(tmp);
+    LIST_HEAD(new_head);
+
+    for (int i = 0; i < times; i++) {
+        int j = 0;
+        list_for_each (tail, head) {
+            if (j >= k)
+                break;
+            j++;
+        }
+        list_cut_position(&tmp, head, tail->prev);
+        q_reverse(&tmp);
+        list_splice_tail_init(&tmp, &new_head);
+    }
+    list_splice_init(&new_head, head);
+}
 /* Sort elements of queue in ascending/descending order */
 void q_sort(struct list_head *head, bool descend) {}
 
