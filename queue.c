@@ -592,3 +592,32 @@ int q_merge(struct list_head *head, bool descend)
      head->prev = tail;
  }
  
+
+ /* Implement the  Fisher–Yates shuffle algo*/
+static void swap(struct list_head *a, struct list_head *b)
+{
+    element_t *a_entry = list_entry(a, element_t, list);
+    element_t *b_entry = list_entry(b, element_t, list);
+    char *tmp = b_entry->value;
+    b_entry->value = a_entry->value;
+    a_entry->value = tmp;
+}
+
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+
+    int size = q_size(head);
+    struct list_head *new = head->prev;
+    for (int i = size - 1; i > 0; i--) {
+        struct list_head *old = head->next;
+        int r = rand() % (i + 1);
+        while (r > 0) {
+            old = old->next;
+            r--;
+        }
+        swap(old, new);
+        new = new->prev;
+    }
+}
