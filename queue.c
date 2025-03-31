@@ -239,26 +239,14 @@ struct list_head *merge(struct list_head *l1,
         element_t *node1 = list_entry(l1, element_t, list);
         element_t *node2 = list_entry(l2, element_t, list);
 
-        if (!descend) {
-            if (strcmp(node1->value, node2->value) <= 0) {
-                temp->next = l1;
-                temp = temp->next;
-                l1 = l1->next;
-            } else {
-                temp->next = l2;
-                temp = temp->next;
-                l2 = l2->next;
-            }
+        if ((strcmp(node1->value, node2->value) <= 0) ^ descend) {
+            temp->next = l1;
+            temp = temp->next;
+            l1 = l1->next;
         } else {
-            if (strcmp(node1->value, node2->value) < 0) {
-                temp->next = l2;
-                temp = temp->next;
-                l2 = l2->next;
-            } else {
-                temp->next = l1;
-                temp = temp->next;
-                l1 = l1->next;
-            }
+            temp->next = l2;
+            temp = temp->next;
+            l2 = l2->next;
         }
     }
 
