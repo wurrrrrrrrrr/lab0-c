@@ -72,18 +72,9 @@ if [ "$DEFAULT_BRANCH" != "master" ]; then
   throw "The default branch for $REPO_OWNER/$REPO_NAME is not 'master'."
 fi
 
-# Construct the URL to the commits page for the default branch
-COMMITS_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/commits/${DEFAULT_BRANCH}"
 
-temp_file=$(mktemp)
-curl -sSL -o "$temp_file" "$COMMITS_URL"
-
-# general grep pattern that finds commit links
-upstream_hash=$(
-  sed -nE 's/.*href="[^"]*\/commit\/([0-9a-f]{40}).*/\1/p' "$temp_file" | head -n 1
-)
-
-rm -f "$temp_file"
+upstream_hash=$(curl -s "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/${DEFAULT_BRANCH}" \
+  | grep '"sha":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')
 
 # If HTML parsing fails, fallback to using GitHub REST API
 if [ -z "$upstream_hash" ]; then
