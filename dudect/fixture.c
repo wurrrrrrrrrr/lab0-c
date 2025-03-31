@@ -42,6 +42,7 @@
 
 #define ENOUGH_MEASURE 10000
 #define TEST_TRIES 10
+#define DUDECT_NUMBER_PERCENTILES (100)
 
 /* Number of percentiles to calculate */
 #define NUM_PERCENTILES (100)
@@ -177,6 +178,9 @@ static bool report(void)
     return true;
 }
 
+
+
+
 static bool doit(int mode)
 {
     int64_t *before_ticks = calloc(N_MEASURES + 1, sizeof(int64_t));
@@ -197,6 +201,7 @@ static bool doit(int mode)
     differentiate(exec_times, before_ticks, after_ticks);
     prepare_percentiles(exec_times, percentiles);
     update_statistics(exec_times, classes, percentiles);
+
     ret &= report();
 
     free(before_ticks);
