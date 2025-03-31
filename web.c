@@ -257,7 +257,15 @@ int web_eventmux(char *buf, size_t buflen)
             accept(server_fd, (struct sockaddr *) &clientaddr, &clientlen);
 
         char *p = web_recv(web_connfd, &clientaddr);
-        char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+        char *buffer =
+            "HTTP/1.1 200 OK\r\n%s%s%s%s%s%s"
+            "Content-Type: text/html\r\n\r\n"
+            "<html><head><style>"
+            "body{font-family: monospace; font-size: 13px;}"
+            "td {padding: 1.5px 6px;}"
+            "</style><link rel=\"shortcut icon\" href=\"#\">"
+            "</head><body><table>\n";
+        writen(web_connfd, buffer, strlen(buffer));
         web_send(web_connfd, buffer);
         strncpy(buf, p, buflen);
         buf[buflen] = '\0';
