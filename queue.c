@@ -1,8 +1,14 @@
+#include "queue.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "queue.h"
+/* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
+ * but some of them cannot occur. You can suppress them by adding the
+ * following line.
+ *   cppcheck-suppress nullPointer
+ */
 
 /* Create an empty queue */
 struct list_head *q_new()
@@ -608,4 +614,48 @@ void q_shuffle(struct list_head *head)
         swap(old, new);
         new = new->prev;
     }
+}
+
+/* Implement the list_quicksort*/
+struct listitem {
+    uint16_t i;
+    struct list_head list;
+};
+
+static inline int cmpint(const void *p1, const void *p2)
+{
+    const uint16_t *i1 = (const uint16_t *) p1;
+    const uint16_t *i2 = (const uint16_t *) p2;
+
+    return *i1 - *i2;
+}
+
+void list_quicksort(struct list_head *head)
+{
+    struct list_head list_less, list_greater;
+    struct listitem *pivot;
+    struct listitem *item = NULL, *is = NULL;
+
+    if (list_empty(head) || list_is_singular(head))
+        return;
+
+    INIT_LIST_HEAD(&list_less);
+    INIT_LIST_HEAD(&list_greater);
+
+    pivot = list_first_entry(head, struct listitem, list);
+    list_del(&pivot->list);
+
+    list_for_each_entry_safe (item, is, head, list) {
+        if (cmpint(&item->i, &pivot->i) < 0)
+            list_move_tail(&item->list, &list_less);
+        else
+            list_move_tail(&item->list, &list_greater);
+    }
+
+    list_quicksort(&list_less);
+    list_quicksort(&list_greater);
+
+    list_add(&pivot->list, head);
+    list_splice(&list_less, head);
+    list_splice_tail(&list_greater, head);
 }
