@@ -89,6 +89,8 @@ static ssize_t getrandom(void *buf, size_t buflen, unsigned int flags)
     return syscall(SYS_getrandom, buf, buflen, flags);
 }
 #endif
+/* Xorshift64 state */
+static uint64_t xorshift64_state = 88172645463325252ULL;
 
 static int linux_getrandom(void *buf, size_t n)
 {
@@ -290,4 +292,19 @@ int randombytes(uint8_t *buf, size_t n)
 #else
 #error "randombytes(...) is not supported on this platform"
 #endif
+}
+
+uint64_t xorshift64(void)
+{
+    xorshift64_state ^= xorshift64_state << 13;
+    xorshift64_state ^= xorshift64_state >> 7;
+    xorshift64_state ^= xorshift64_state << 17;
+    return xorshift64_state;
+}
+
+
+void randombytes_xor(uint8_t *buf, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+        buf[i] = (uint8_t) (xorshift64() & 0xFF);
 }

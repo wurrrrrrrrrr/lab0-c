@@ -180,6 +180,22 @@ static void fill_rand_string(char *buf, size_t buf_size)
     buf[len] = '\0';
 }
 
+uint64_t xorshift64(void);
+void randombytes_xor(uint8_t *buf, size_t n);
+static void fill_Xorshift_string(char *buf, size_t buf_size)
+{
+    size_t len = 0;
+    while (len < MIN_RANDSTR_LEN)
+        len = (xorshift64() % (buf_size - MIN_RANDSTR_LEN)) + MIN_RANDSTR_LEN;
+
+    uint64_t Xorshiftstr_buf[MAX_RANDSTR_LEN] = {0};
+    randombytes_xor((uint8_t *) Xorshiftstr_buf, len * sizeof(uint64_t));
+    for (size_t n = 0; n < len; n++)
+        buf[n] = charset[Xorshiftstr_buf[n] % (sizeof(charset) - 1)];
+
+    buf[len] = '\0';  // 結尾
+}
+
 /* insertion */
 static bool queue_insert(position_t pos, int argc, char *argv[])
 {
@@ -201,8 +217,10 @@ static bool queue_insert(position_t pos, int argc, char *argv[])
 
     char *lasts = NULL;
     char randstr_buf[MAX_RANDSTR_LEN];
+    char Xorshiftstr_buf[MAX_RANDSTR_LEN];
     int reps = 1;
-    bool ok = true, need_rand = false;
+    bool ok = true, need_rand = false, need_Xorshift = false;
+    ;
     if (argc != 2 && argc != 3) {
         report(1, "%s needs 1-2 arguments", argv[0]);
         return false;
@@ -220,6 +238,10 @@ static bool queue_insert(position_t pos, int argc, char *argv[])
         need_rand = true;
         inserts = randstr_buf;
     }
+    if (!strcmp(inserts, "Xorshift")) {
+        need_Xorshift = true;
+        inserts = Xorshiftstr_buf;
+    }
 
     if (!current || !current->q)
         report(3, "Warning: Calling insert %s on null queue",
@@ -230,6 +252,9 @@ static bool queue_insert(position_t pos, int argc, char *argv[])
         for (int r = 0; ok && r < reps; r++) {
             if (need_rand)
                 fill_rand_string(randstr_buf, sizeof(randstr_buf));
+
+            if (need_Xorshift)
+                fill_Xorshift_string(Xorshiftstr_buf, sizeof(Xorshiftstr_buf));
             bool rval = pos == POS_TAIL ? q_insert_tail(current->q, inserts)
                                         : q_insert_head(current->q, inserts);
             if (rval) {
@@ -1122,7 +1147,7 @@ static void console_init()
                 "");
     ADD_COMMAND(reverseK, "Reverse the nodes of the queue 'K' at a time",
                 "[K]");
-//  ADD_COMMAND(shuffle, "Fisher-Yates shuffle Algorithm", "");
+    //  ADD_COMMAND(shuffle, "Fisher-Yates shuffle Algorithm", "");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",
